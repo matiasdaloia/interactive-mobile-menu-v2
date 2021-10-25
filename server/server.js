@@ -75,7 +75,7 @@ app.prepare().then(async () => {
     })
   );
 
-  connectDB();
+  await connectDB();
 
   const handleRequest = async (ctx) => {
     await handle(ctx.req, ctx.res);
@@ -123,7 +123,7 @@ app.prepare().then(async () => {
 
   server.use(router.allowedMethods());
   server.use(router.routes());
-  
+
   server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);
   });

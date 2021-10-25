@@ -13,9 +13,10 @@ module.exports = `<nav class='matias-navigation hide'>
 
             {%- assign outerLoopIndex = forloop.index -%}
             {%- assign contentIndex = 1 | append: outerLoopIndex -%}
+            {%- assign collection = collections[link.handle] -%}
 
             <li class='link' data-content-index={{ outerLoopIndex }}>
-                <img src='{{ link.url }}' alt='{{ link.handle }}'/>
+                <img src='{{ collection.image | img_url: 'medium' }}' alt='{{ collection.title }}'/>
                 <span>
                     <a href='#'>{{ link.title }}</a>
                 </span>

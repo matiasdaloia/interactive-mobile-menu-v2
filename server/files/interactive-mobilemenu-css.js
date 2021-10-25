@@ -34,12 +34,11 @@ nav.matias-navigation ul{
 
 .matias-navigation__logo{
     width: 100%;
-    float: none;
-    text-align: center;
-    margin: 0px auto;
     background: #000;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    min-height:80px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
 .matias-navigation__logo a img {
