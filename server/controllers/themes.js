@@ -15,7 +15,6 @@ const headerSnippet = require("../files/header");
  * @returns {Array} array of themes
  */
 export const getThemes = async (ctx) => {
-
     const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res);
 
     const { shop, accessToken } = session;

@@ -1,26 +1,26 @@
 import { SettingToggle, TextStyle, Spinner, Banner } from "@shopify/polaris";
 import React, { useState, useEffect } from "react";
-import { installApp, uninstallApp } from "../functions";
+import ThemeHelpers from "../helpers/themeHelpers";
 import axios from "axios";
 
-const Toggle = ({ themeid, token}) => {
+const Toggle = ({ themeid, token }) => {
   const [loading, setLoading] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [done, setDone] = useState(false);
 
-  // useEffect(() => {
+  useEffect(() => {
 
-  //   async function isAppInstalled() {
-  //     await axios
-  //       .get(`/api/${themeid}/isAppInstalled`, {
-  //         headers: { "Authorization": `Bearer ${token}` }
-  //       })
-  //       .then((res) => setInstalled(res.data));
-  //   }
+    async function isAppInstalled() {
+      await axios
+        .get(`/api/${themeid}/isAppInstalled`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        })
+        .then((res) => setInstalled(res.data));
+    }
 
-  //   isAppInstalled();
-  // }, [themeid, installed]);
-  
+    isAppInstalled();
+  }, [themeid, installed]);
+
 
   const handleInstall = async () => {
     setLoading(true);
@@ -28,7 +28,7 @@ const Toggle = ({ themeid, token}) => {
     if (installed === true) {
       console.log("app is already installed....");
     } else {
-      await installApp(themeid, token).then(() => {
+      await ThemeHelpers.installApp(themeid, token).then(() => {
         setLoading(false);
         setDone(true);
       });

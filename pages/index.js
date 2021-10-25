@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Toggle from "../components/Toggle";
 import axios from "axios";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { getSessionToken, authenticatedFetch } from "@shopify/app-bridge-utils";
+import { getSessionToken } from "@shopify/app-bridge-utils";
 
 const Index = () => {
   const [theme, setTheme] = useState({
