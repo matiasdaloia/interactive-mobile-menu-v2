@@ -6,17 +6,18 @@ import Shopify, { ApiVersion } from "@shopify/shopify-api";
 import Koa from "koa";
 import next from "next";
 import Router from "koa-router";
-import axios from 'axios';
+
+import {
+  getThemeAssets,
+  getThemes,
+  installCss,
+  installHeaderSnippet,
+  installLiquidFile,
+  installRequiredLibraries,
+} from "./controllers/themes";
 
 // DB
-const connectDB = require("../config/db");
-const Store = require("../models/Store");
-
-// Import the required assets to be created in Shopify theme code.
-const interactiveMobileMenu = require("../files/interactive-mobilemenu");
-const interactiveMobileMenuCss = require("../files/interactive-mobilemenu-css");
-const theme = require("../files/theme");
-const headerSnippet = require("../files/header");
+const connectDB = require("./config/db");
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -99,248 +100,13 @@ app.prepare().then(async () => {
     }
   );
 
-  // GET List of Store Themes
-  router.get("/api/themes", verifyRequest(), async (ctx) => {
+  router.get("/api/themes", verifyRequest(), getThemes);
+  router.get("/api/:themeid/assets", verifyRequest(), getThemeAssets);
+  router.put("/api/:themeid/installLiquidFile", verifyRequest(), installLiquidFile);
+  router.put("/api/:themeid/installCss", verifyRequest(), installCss);
+  router.put("/api/:themeid/installRequiredLibraries", verifyRequest(), installRequiredLibraries);
+  router.put("/api/:themeid/installHeaderSnippet", verifyRequest(), installHeaderSnippet);
 
-    const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res);
-
-    const { shop, accessToken } = session;
-
-    const url = `https://${shop}/admin/api/2021-01/themes.json`;
-
-    const shopifyHeader = (accessToken) => ({
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": accessToken,
-    });
-
-    try {
-      const getThemes = await axios.get(url, {
-        headers: shopifyHeader(accessToken),
-      });
-
-      ctx.body = getThemes.data;
-
-      ctx.res.statusCode = 200;
-    } catch (error) {
-      console.log(error);
-    }
-  });
-
-  // Get the assets list with theme id
-  router.get("/api/:themeid/assets", verifyRequest(), async (ctx) => {
-
-    const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res);
-
-    const { shop, accessToken } = session;
-
-    const url = `https://${shop}/admin/api/2021-01/themes/${ctx.params.themeid}/assets.json`;
-
-    const shopifyHeader = (accessToken) => ({
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": accessToken,
-    });
-
-    try {
-      const getAssets = await axios.get(url, {
-        headers: shopifyHeader(accessToken),
-      });
-
-      ctx.body = getAssets.data;
-      ctx.res.statusCode = 200;
-    } catch (error) {
-      console.log(error);
-      ctx.res.statusCode = 404;
-    }
-  });
-
-  // Create liquid file after installing the app
-  router.put(
-    "/api/:themeid/installLiquidFile",
-    verifyRequest(),
-    async (ctx) => {
-      const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res);
-
-      const { shop, accessToken } = session;
-
-      const url = `https://${shop}/admin/api/2021-01/themes/${ctx.params.themeid}/assets.json`;
-
-      const shopifyHeader = (accessToken) => ({
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": accessToken,
-      });
-
-      try {
-        // install liquid file
-        const installLiquid = await axios.put(
-          url,
-          JSON.stringify({
-            asset: {
-              key: "snippets/interactive-mobilemenu.liquid",
-              value: interactiveMobileMenu,
-            },
-          }),
-          {
-            headers: shopifyHeader(accessToken),
-          }
-        );
-
-        ctx.body = installLiquid.data;
-        ctx.res.statusCode = 200;
-      } catch (error) {
-        console.log(error);
-        ctx.res.statusCode = 404;
-      }
-    }
-  );
-
-  router.put("/api/:themeid/installCss", verifyRequest(), async (ctx) => {
-    const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res);
-
-    const { shop, accessToken } = session;
-
-    const url = `https://${shop}/admin/api/2021-01/themes/${ctx.params.themeid}/assets.json`;
-
-    const shopifyHeader = (accessToken) => ({
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": accessToken,
-    });
-
-    try {
-      // install css
-      const installCss = await axios.put(
-        url,
-        JSON.stringify({
-          asset: {
-            key: "assets/interactive-mobilemenu.css",
-            value: interactiveMobileMenuCss,
-          },
-        }),
-        {
-          headers: shopifyHeader(accessToken),
-        }
-      );
-
-      ctx.body = installCss.data;
-      ctx.res.statusCode = 200;
-    } catch (error) {
-      console.log(error);
-      ctx.res.statusCode = 404;
-    }
-  });
-
-  // Install required libraries in theme.liquid
-  router.put(
-    "/api/:themeid/installRequiredLibraries",
-    verifyRequest(),
-    async (ctx) => {
-      const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res);
-
-      const { shop, accessToken } = session;
-
-      const url = `https://${shop}/admin/api/2021-01/themes/${ctx.params.themeid}/assets.json?asset[key]=layout/theme.liquid`;
-
-      const putUrl = `https://${shop}/admin/api/2021-01/themes/${ctx.params.themeid}/assets.json`;
-
-      const shopifyHeader = (accessToken) => ({
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": accessToken,
-      });
-
-      try {
-        const asset = await axios.get(url, {
-          headers: shopifyHeader(accessToken),
-        });
-
-        const assetContent = asset.data.asset.value;
-
-        const splittedAssetContent = assetContent.split("</head>");
-
-        const topContent = splittedAssetContent[0];
-        const bottomContent = splittedAssetContent[1];
-
-        const newAssetContent = topContent + theme + "</head>" + bottomContent;
-
-        // install newAssetContent file
-        const installNewAssetContent = await axios.put(
-          putUrl,
-          JSON.stringify({
-            asset: {
-              key: "layout/theme.liquid",
-              value: newAssetContent,
-            },
-          }),
-          {
-            headers: shopifyHeader(accessToken),
-          }
-        );
-
-        ctx.body = installNewAssetContent.data;
-        ctx.res.statusCode = 200;
-      } catch (error) {
-        console.log(error);
-        ctx.res.statusCode = 404;
-      }
-    }
-  );
-
-  // Install snippet in header.liquid
-  router.put(
-    "/api/:themeid/installHeaderSnippet",
-    verifyRequest(),
-    async (ctx) => {
-      const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res);
-
-      const { shop, accessToken } = session;
-
-      const url = `https://${shop}/admin/api/2021-01/themes/${ctx.params.themeid}/assets.json?asset[key]=sections/header.liquid`;
-
-      const putUrl = `https://${shop}/admin/api/2021-01/themes/${ctx.params.themeid}/assets.json`;
-
-      const shopifyHeader = (accessToken) => ({
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": accessToken,
-      });
-
-      try {
-        const asset = await axios.get(url, {
-          headers: shopifyHeader(accessToken),
-        });
-
-        const assetContent = asset.data.asset.value;
-
-        const newAssetContent = headerSnippet + assetContent;
-
-        // install header snippet file
-        const installNewAssetContent = await axios.put(
-          putUrl,
-          JSON.stringify({
-            asset: {
-              key: "sections/header.liquid",
-              value: newAssetContent,
-            },
-          }),
-          {
-            headers: shopifyHeader(accessToken),
-          }
-        );
-
-        const newStore = new Store({
-          storeUrl: shop,
-          accessToken: accessToken,
-          themeId: ctx.params.themeid,
-          installed: true,
-        });
-
-        await newStore.save().then((res) => console.log(res, "saved to db"));
-
-        ctx.body = installNewAssetContent.data;
-        ctx.res.statusCode = 200;
-      } catch (error) {
-        console.log(error);
-        ctx.res.statusCode = 404;
-      }
-    }
-  );
 
   router.get("(/_next/static/.*)", handleRequest); // Static content is clear
   router.get("/_next/webpack-hmr", handleRequest); // Webpack content is clear
@@ -357,6 +123,7 @@ app.prepare().then(async () => {
 
   server.use(router.allowedMethods());
   server.use(router.routes());
+  
   server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);
   });
